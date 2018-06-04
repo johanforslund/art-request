@@ -1,15 +1,13 @@
 pragma solidity ^0.4.0;
 
-//TO DO: Efter 3 dagar om inte A har accepterat/nekat så kan submitter få sin ether
-
 contract ImageRequest {
     struct Submission {
         string url;
         string email;
         address submitter;
         bool previewApproved;
-        uint deadline;
-        bool finalized;
+        uint previewApprovedTime;
+        uint finalSubmissionTime;
         string[] finals;
     }
 
@@ -18,7 +16,9 @@ contract ImageRequest {
     string public description;
     string public imageUrl;
     uint public reward;
-    uint public numberOfPreviewApprovals;
+    uint public deposit;
+    bool public anyPreviewApproved;
+    bool finalized;
     Submission[] public submissions;
 
     modifier restricted() {
@@ -31,8 +31,9 @@ contract ImageRequest {
         description = _description;
         imageUrl = _imageUrl;
         creator = msg.sender;
-        reward = msg.value;
-        numberOfPreviewApprovals = 0;
+        reward = msg.value * 100 / 120;
+        deposit = msg.value - reward; //20% deposit
+        anyPreviewApproved = false;
     }
 
     function submitPreview(string url, string email) public {
@@ -43,8 +44,8 @@ contract ImageRequest {
             email: email,
             submitter: msg.sender,
             previewApproved: false,
-            deadline: 0,
-            finalized: false,
+            previewApprovedTime: 0,
+            finalSubmissionTime: 0,
             finals: finals
         });
 
@@ -54,35 +55,54 @@ contract ImageRequest {
     function submitFinal(uint index, string url) public payable {
         require(submissions[index].previewApproved);
         if (submissions[index].finals.length == 0) {
-            require(msg.value >= 1 ether);
+            require(msg.value >= deposit);
         }
         submissions[index].finals.push(url);
+        submissions[index].finalSubmissionTime = now;
     }
 
     function approvePreview(uint index) public restricted {
+        require(!anyPreviewApproved);
         submissions[index].previewApproved = true;
-        submissions[index].deadline = now + 259200;
-        numberOfPreviewApprovals++;
+        submissions[index].previewApprovedTime = now;
+        anyPreviewApproved = true;
     }
 
     function approveFinal(uint index) public restricted {
         require(submissions[index].previewApproved);
-        submissions[index].submitter.transfer(reward);
-        submissions[0].finalized = true;
-        creator.transfer(1 ether);
+        require(submissions[index].finals.length > 0);
+        submissions[index].submitter.transfer(reward + deposit);
+        finalized = true;
+        creator.transfer(deposit);
     }
 
-    function cancelApproval(uint index) public restricted {
-        require(submissions[index].deadline < now);
+    function rejectFinal(uint index) public restricted {
+        require(submissions[index].previewApproved);
+        require(submissions[index].finals.length > 0);
+        finalized = true;
+        creator.transfer(deposit);
+    }
+
+    //If person B has not submitted a final submission within 3 days.
+    function cancelPreviewApproval(uint index) public restricted {
+        require(submissions[index].previewApprovedTime < now - 3 seconds);
         require(submissions[index].finals.length == 0);
         submissions[index].previewApproved = false;
-        numberOfPreviewApprovals--;
+        anyPreviewApproved = false;
+    }
+
+    //If person A has not approved/rejected the final submission within 3 days.
+    function withdrawNoApproval(uint index) public {
+        require(submissions[index].submitter == msg.sender);
+        require(finalized == false);
+        require(submissions[index].finalSubmissionTime < now - 3 seconds);
+        submissions[index].submitter.transfer(reward + deposit);
+        finalized = true;
     }
 
     function remove() public restricted {
-        require(numberOfPreviewApprovals == 0);
-        creator.transfer(reward);
-        //selfdestruct, men detta måste göras noggrant
+        require(!anyPreviewApproved || finalized);
+        selfdestruct(creator);
     }
 
     function getFinal(uint i, uint j) public view returns (string) {
