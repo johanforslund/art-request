@@ -72,11 +72,14 @@ contract ImageRequest {
         require(submissions[index].previewApproved);
         require(submissions[index].finals.length > 0);
         submissions[index].submitter.transfer(reward + deposit);
+        if (!finalized) {
+            creator.transfer(deposit);
+        }
         finalized = true;
-        creator.transfer(deposit);
     }
 
     function rejectFinal(uint index) public restricted {
+        require(!finalized);
         require(submissions[index].previewApproved);
         require(submissions[index].finals.length > 0);
         finalized = true;
@@ -93,6 +96,7 @@ contract ImageRequest {
 
     //If person A has not approved/rejected the final submission within 3 days.
     function withdrawNoApproval(uint index) public {
+        require(submissions[index].finals.length > 0);
         require(submissions[index].submitter == msg.sender);
         require(finalized == false);
         require(submissions[index].finalSubmissionTime < now - 3 seconds);
