@@ -1,4 +1,4 @@
-pragma solidity ^0.4.0;
+pragma solidity ^0.4.24;
 
 contract ImageRequest {
     struct Submission {
@@ -88,7 +88,8 @@ contract ImageRequest {
 
     //If person B has not submitted a final submission within 3 days.
     function cancelPreviewApproval(uint index) public restricted {
-        require(submissions[index].previewApprovedTime < now - 3 seconds);
+        require(submissions[index].previewApproved);
+        require(submissions[index].previewApprovedTime < now - 3 days);
         require(submissions[index].finals.length == 0);
         submissions[index].previewApproved = false;
         anyPreviewApproved = false;
@@ -98,8 +99,8 @@ contract ImageRequest {
     function withdrawNoApproval(uint index) public {
         require(submissions[index].finals.length > 0);
         require(submissions[index].submitter == msg.sender);
-        require(finalized == false);
-        require(submissions[index].finalSubmissionTime < now - 3 seconds);
+        require(!finalized);
+        require(submissions[index].finalSubmissionTime < now - 3 days);
         submissions[index].submitter.transfer(reward + deposit);
         finalized = true;
     }
