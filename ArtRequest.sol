@@ -2,8 +2,8 @@ pragma solidity ^0.4.24;
 
 contract ImageRequest {
     struct Submission {
-        string url;
-        string email;
+        string previewUrl;
+        string submitterEmail;
         address submitter;
         bool previewApproved;
         uint previewApprovedTime;
@@ -14,7 +14,8 @@ contract ImageRequest {
     address public requester;
     string public title;
     string public description;
-    string public imageUrl;
+    string public email;
+    string public url;
     uint public reward;
     uint public deposit;
     bool public anyPreviewApproved;
@@ -29,19 +30,19 @@ contract ImageRequest {
     constructor(string _title, string _description, string _imageUrl) public payable {
         title = _title;
         description = _description;
-        imageUrl = _imageUrl;
+        url = _imageUrl;
         requester = msg.sender;
         reward = msg.value * 100 / 120;
         deposit = msg.value - reward; //20% deposit
         anyPreviewApproved = false;
     }
 
-    function submitPreview(string url, string email) public {
+    function submitPreview(string previewUrl, string submitterEmail) public {
         string[] memory finals;
 
         Submission memory newSubmission = Submission({
-            url: url,
-            email: email,
+            previewUrl: previewUrl,
+            submitterEmail: submitterEmail,
             submitter: msg.sender,
             previewApproved: false,
             previewApprovedTime: 0,
@@ -52,12 +53,12 @@ contract ImageRequest {
         submissions.push(newSubmission);
     }
 
-    function submitFinal(uint index, string url) public payable {
+    function submitFinal(uint index, string finalUrl) public payable {
         require(submissions[index].previewApproved);
         if (submissions[index].finals.length == 0) {
             require(msg.value >= deposit);
         }
-        submissions[index].finals.push(url);
+        submissions[index].finals.push(finalUrl);
         submissions[index].finalSubmissionTime = now;
     }
 
@@ -127,5 +128,18 @@ contract ImageRequest {
     //Getter, solidity does not auto-generate getters for arrays within structs it seems.
     function finals(uint i, uint j) public view returns (string) {
         return submissions[i].finals[j];
+    }
+
+    function getSummary() public view returns (address, string, string, string, string, uint, bool, bool) {
+        return (
+            requester,
+            title,
+            description,
+            email,
+            url,
+            reward,
+            anyPreviewApproved,
+            finalized
+        );
     }
 }
