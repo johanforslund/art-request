@@ -8,21 +8,21 @@ contract ImageRequest {
         bool previewApproved;
         uint previewApprovedTime;
         uint finalSubmissionTime;
-        string[] finals;
+        string[] finals; //Om detta inte fungerar: Skapa en mapping(uint => string) och en finalsCount?
     }
 
-    address public creator;
+    address public requester;
     string public title;
     string public description;
     string public imageUrl;
     uint public reward;
     uint public deposit;
     bool public anyPreviewApproved;
-    bool finalized;
+    bool public finalized;
     Submission[] public submissions;
 
     modifier restricted() {
-        require(msg.sender == creator);
+        require(msg.sender == requester);
         _;
     }
 
@@ -30,7 +30,7 @@ contract ImageRequest {
         title = _title;
         description = _description;
         imageUrl = _imageUrl;
-        creator = msg.sender;
+        requester = msg.sender;
         reward = msg.value * 100 / 120;
         deposit = msg.value - reward; //20% deposit
         anyPreviewApproved = false;
@@ -73,7 +73,7 @@ contract ImageRequest {
         require(submissions[index].finals.length > 0);
         submissions[index].submitter.transfer(reward + deposit);
         if (!finalized) {
-            creator.transfer(deposit);
+            requester.transfer(deposit);
         }
         finalized = true;
     }
@@ -83,7 +83,7 @@ contract ImageRequest {
         require(submissions[index].previewApproved);
         require(submissions[index].finals.length > 0);
         finalized = true;
-        creator.transfer(deposit);
+        requester.transfer(deposit);
     }
 
     //If person B has not submitted a final submission within 3 days.
@@ -107,11 +107,25 @@ contract ImageRequest {
 
     function remove() public restricted {
         require(!anyPreviewApproved || finalized);
-        selfdestruct(creator);
+        selfdestruct(requester);
     }
 
-    function getFinal(uint i, uint j) public view returns (string) {
+
+    /* *********************************************************************************************
+    GETTERS
+    ********************************************************************************************* */
+
+    function getSubmissionsCount() public view returns (uint) {
+        return submissions.length;
+    }
+
+    //getFinalsCount and get
+    function getFinalsCount(uint index) public view returns (uint) {
+        return submissions[index].finals.length;
+    }
+
+    //Getter, solidity does not auto-generate getters for arrays within structs it seems.
+    function finals(uint i, uint j) public view returns (string) {
         return submissions[i].finals[j];
     }
-
 }
