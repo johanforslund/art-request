@@ -1,6 +1,20 @@
 pragma solidity ^0.4.24;
 
-contract ImageRequest {
+contract RequestFactory {
+    address[] public deployedRequests;
+
+    function createCampaign(string title, string description, string email, string url) public payable {
+        address newRequest = new Request(title, description, email, url, msg.sender, msg.value);
+        newRequest.transfer(msg.value);
+        deployedRequests.push(newRequest);
+    }
+
+    function getDeployedRequests() public view returns (address[]) {
+        return deployedRequests;
+    }
+}
+
+contract Request {
     struct Submission {
         string previewUrl;
         string submitterEmail;
@@ -27,14 +41,20 @@ contract ImageRequest {
         _;
     }
 
-    constructor(string _title, string _description, string _imageUrl) public payable {
+    constructor(string _title, string _description, string _email, string _url, address _requester, uint _value) public payable {
         title = _title;
         description = _description;
-        url = _imageUrl;
-        requester = msg.sender;
-        reward = msg.value * 100 / 120;
-        deposit = msg.value - reward; //20% deposit
+        url = _url;
+        email = _email;
+        requester = _requester;
+        reward = _value * 100 / 120;
+        deposit = _value - reward; //20% deposit
         anyPreviewApproved = false;
+    }
+
+    //This is needed for receiving ether from other contract (fallback function)
+    function() public payable {
+
     }
 
     function submitPreview(string previewUrl, string submitterEmail) public {
