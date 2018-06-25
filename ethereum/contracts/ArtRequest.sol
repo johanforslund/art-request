@@ -3,7 +3,7 @@ pragma solidity ^0.4.24;
 contract RequestFactory {
     address[] public deployedRequests;
 
-    function createCampaign(string title, string description, string email, string url) public payable {
+    function createRequest(string title, string description, string email, string url) public payable {
         address newRequest = new Request(title, description, email, url, msg.sender, msg.value);
         newRequest.transfer(msg.value);
         deployedRequests.push(newRequest);
