@@ -128,7 +128,11 @@ contract Request {
 
     function remove() public restricted {
         require(!anyPreviewApproved || finalized);
-        selfdestruct(requester);
+        if(!finalized) {
+            selfdestruct(requester);
+        } else {
+            selfdestruct(0x0);
+        }
     }
 
 

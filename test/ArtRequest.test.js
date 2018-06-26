@@ -43,8 +43,113 @@ describe('Requests', () => {
   });
 
   it('receives the correct amount of ether', async () => {
-    sentEther = await web3.utils.toWei('5', 'ether');
-    requestBalance = await web3.eth.getBalance(requestAddress);
+    const sentEther = await web3.utils.toWei('5', 'ether');
+    const requestBalance = await web3.eth.getBalance(requestAddress);
     assert.equal(sentEther, requestBalance);
   });
+
+  it('sets title, description, email and url correctly', async () => {
+    const title = await request.methods.title().call();
+    const description = await request.methods.description().call();
+    const email = await request.methods.email().call();
+    const url = await request.methods.url().call();
+    assert.equal('Remove scratches', title);
+    assert.equal('Please remove the scratches from this picture', description);
+    assert.equal('user@email.com', email);
+    assert.equal('http://url.com', url);
+  });
+
+  it('is possible to remove request if no preview have been approved (and get ether back)', async () => {
+    let balanceBefore = await web3.eth.getBalance(accounts[0]);
+    balanceBefore = web3.utils.fromWei(balanceBefore, 'ether');
+    balanceBefore = parseFloat(balanceBefore);
+
+    await request.methods.remove().send({
+      from: accounts[0],
+      gas: '3000000'
+    });
+
+    let balanceAfter = await web3.eth.getBalance(accounts[0]);
+    balanceAfter = web3.utils.fromWei(balanceAfter, 'ether');
+    balanceAfter = parseFloat(balanceAfter);
+
+    assert((balanceAfter - balanceBefore) > 4.99);
+  });
+
+  it('is NOT possible to remove request if any preview have been approved', async () => {
+    await submitAndApprovePreview();
+
+    try {
+      await request.methods.remove().send({
+        from: accounts[0],
+        gas: '3000000'
+      });
+    } catch (err) {
+      assert(err);
+      return;
+    }
+    assert(false);
+  });
+
+  it('is NOT possible to remove if you are not requester', async () => {
+    try {
+      await request.methods.remove().send({
+        from: accounts[1],
+        gas: '3000000'
+      });
+    } catch (err) {
+      assert(err);
+      return;
+    }
+    assert(false);
+  });
+
+  it('is possible to remove if final have been approved (ether burn)', async () => {
+    await submitAndApprovePreview();
+    await submitAndApproveFinal();
+
+    let balanceBefore = await web3.eth.getBalance(accounts[0]);
+    balanceBefore = web3.utils.fromWei(balanceBefore, 'ether');
+    balanceBefore = parseFloat(balanceBefore);
+
+    await request.methods.remove().send({
+      from: accounts[0],
+      gas: '3000000'
+    });
+
+    let balanceAfter = await web3.eth.getBalance(accounts[0]);
+    balanceAfter = web3.utils.fromWei(balanceAfter, 'ether');
+    balanceAfter = parseFloat(balanceAfter);
+
+    assert((balanceAfter - balanceBefore) < 0.01);
+  });
 });
+
+
+/**********************************************************************************************
+    Helper functions
+**********************************************************************************************/
+const submitAndApprovePreview = async () => {
+  await request.methods.submitPreview('http://preview.com', 'submitter@email.com').send({
+    from: accounts[1],
+    gas: '3000000'
+  });
+
+  await request.methods.approvePreview(0).send({
+    from: accounts[0],
+    gas: '3000000'
+  });
+}
+
+const submitAndApproveFinal = async () => {
+  await request.methods.submitFinal(0, 'http://final.com').send({
+    from: accounts[1],
+    value: web3.utils.toWei('1', 'ether'),
+    gas: '3000000'
+  });
+
+  await request.methods.approveFinal(0).send({
+    from: accounts[0],
+    gas: '3000000'
+  });
+}
