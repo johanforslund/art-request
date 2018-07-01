@@ -41,7 +41,7 @@ contract Request {
         _;
     }
 
-    constructor(string _title, string _description, string _email, string _url, address _requester, uint _value) public payable {
+    constructor(string _title, string _description, string _email, string _url, address _requester, uint _value) public {
         title = _title;
         description = _description;
         url = _url;

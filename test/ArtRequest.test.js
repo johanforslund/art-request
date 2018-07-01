@@ -211,7 +211,7 @@ const submitAndApproveFinal = async () => {
   });
 }
 
-const timeTravel = function (time) {
+const timeTravel = time => {
   return new Promise((resolve, reject) => {
     web3.currentProvider.sendAsync({
       jsonrpc: "2.0",
@@ -225,7 +225,7 @@ const timeTravel = function (time) {
   })
 }
 
-const mineBlock = function () {
+const mineBlock = () => {
   return new Promise((resolve, reject) => {
     web3.currentProvider.sendAsync({
       jsonrpc: "2.0",
