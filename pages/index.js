@@ -1,7 +1,9 @@
 import React, { Component } from 'react';
-import { Card } from 'semantic-ui-react';
+import { Card, Button } from 'semantic-ui-react';
+import web3 from '../ethereum/web3';
 import Request from '../ethereum/request';
 import factory from '../ethereum/factory';
+import Layout from '../components/Layout';
 
 class RequestIndex extends Component {
   static async getInitialProps() {
@@ -15,7 +17,7 @@ class RequestIndex extends Component {
       return {
         requester: summary[0],
         title: summary[1],
-        reward: summary[5],
+        reward: web3.utils.fromWei(summary[5], 'ether'),
         anyPreviewApproved: summary[6],
         finalized: summary[7],
         address
@@ -30,11 +32,13 @@ class RequestIndex extends Component {
 
   renderCampaigns() {
     const items = this.props.requests.map(request => {
+      const extraText = request.finalized ? 'Closed' : 'Open';
+
       return {
         header: request.title,
         description: request.address,
-        meta: '$' + request.reward,
-        extra: 'Open?',
+        meta: request.reward + ' ETH',
+        extra: extraText,
         fluid: true
       };
     });
@@ -44,10 +48,11 @@ class RequestIndex extends Component {
 
   render() {
     return (
-      <div>
-        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.3.1/semantic.min.css"></link>
-        {this.renderCampaigns()}
-      </div>
+      <Layout>
+        <div>
+          {this.renderCampaigns()}
+        </div>
+      </Layout>
     );
   }
 }
