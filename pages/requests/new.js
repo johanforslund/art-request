@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Form, Button, TextArea, Input } from 'semantic-ui-react';
+import { Form, Button, TextArea, Input, Message } from 'semantic-ui-react';
 import Layout from '../../components/Layout';
 import factory from '../../ethereum/factory';
 import web3 from '../../ethereum/web3';
@@ -11,21 +11,32 @@ class RequestNew extends Component {
     description: '',
     email: '',
     url: '',
-    reward: ''
+    reward: '',
+    errorMessage: '',
+    loading: false
   };
 
   onSubmit = async (event) => {
     event.preventDefault();
 
+    this.setState({ loading: true, errorMessage: '' });
+
     const { title, description, email, url, reward } = this.state;
-    const accounts = await web3.eth.getAccounts();
 
-    await factory.methods.createRequest(title, description, email, url).send({
-      from: accounts[0],
-      value: web3.utils.toWei(reward, 'ether') * 1.2 //Add a 20% deposit
-    });
+    try {
+      const accounts = await web3.eth.getAccounts();
 
-    Router.pushRoute('/');
+      await factory.methods.createRequest(title, description, email, url).send({
+        from: accounts[0],
+        value: web3.utils.toWei(reward, 'ether') * 1.2 //Add a 20% deposit
+      });
+
+      Router.pushRoute('/');
+    } catch (err) {
+      this.setState({ errorMessage: err.message });
+    }
+
+    this.setState({ loading: false });
   };
 
   render() {
@@ -33,7 +44,7 @@ class RequestNew extends Component {
       <Layout>
         <h2>New Request</h2>
 
-        <Form onSubmit={this.onSubmit}>
+        <Form onSubmit={this.onSubmit} error={!!this.state.errorMessage}>
           <Form.Field>
             <label>Title</label>
             <Input
@@ -79,7 +90,9 @@ class RequestNew extends Component {
               value={this.state.reward ? this.state.reward * 0.2 : ''}
             />
           </Form.Field>
-          <Button type='submit'>Submit</Button>
+
+          <Message error header="Error!" content={this.state.errorMessage} />
+          <Button loading={this.state.loading} type="submit">Submit</Button>
         </Form>
       </Layout>
     );

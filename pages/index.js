@@ -4,6 +4,7 @@ import web3 from '../ethereum/web3';
 import Request from '../ethereum/request';
 import factory from '../ethereum/factory';
 import Layout from '../components/Layout';
+import { Link } from '../routes';
 
 class RequestIndex extends Component {
   static async getInitialProps() {
@@ -35,7 +36,11 @@ class RequestIndex extends Component {
       const extraText = request.finalized ? 'Closed' : 'Open';
 
       return {
-        header: request.title,
+        header: (
+          <Link route={`/requests/${request.address}`}>
+            <a><h3>{request.title}</h3></a>
+          </Link>
+        ),
         description: request.address,
         meta: request.reward + ' ETH',
         extra: extraText,
