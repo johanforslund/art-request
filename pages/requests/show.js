@@ -9,6 +9,13 @@ class CampaignShow extends Component {
     const request = Request(props.query.address);
 
     const summary = await request.methods.getSummary().call();
+    const submissionsCount = await request.methods.getSubmissionsCount().call();
+
+    const submissions = await Promise.all(
+      Array(parseInt(submissionsCount)).fill().map((element, index) => {
+        return request.methods.submissions(index).call();
+      })
+    );
 
     return {
       requester: summary[0],
@@ -18,7 +25,8 @@ class CampaignShow extends Component {
       requestUrl: summary[4],
       reward: web3.utils.fromWei(summary[5], 'ether'),
       anyPreviewApproved: summary[6],
-      finalized: summary[7]
+      finalized: summary[7],
+      submissions
     };
   }
 
@@ -54,23 +62,33 @@ class CampaignShow extends Component {
   }
 
   renderSubmissions() {
-    const items = [
-      {
-        header: 'http://url1.com',
-        meta: '2018-04-01',
-        description: '0x733F64087efeB50183bb8B2D3cDb3ce824F968Ad',
-        style: { overflowWrap: 'break-word' }
-      },
-      {
-        header: 'asd',
-        meta: 'Email address',
-        description: 'Contact this person for more information about this request',
-        style: { overflowWrap: 'break-word' }
-      },
-
-    ];
-
-    return <Card.Group items={items} />
+    console.log(this.props.submissions);
+    return this.props.submissions.map(submission => {
+      return (
+        <div class="ui link cards">
+          <div class="card">
+            <div class="image">
+              <img src="https://cdn4.iconfinder.com/data/icons/flatified/512/photos.png" />
+            </div>
+            <div class="content">
+              <div class="header">{submission.previewUrl}</div>
+              <div style={{ overflowWrap: 'break-word'}} class="meta">
+                <a>{submission.submitter}</a>
+              </div>
+            </div>
+            <div class="extra content">
+              <span class="right floated">
+                2018-04-01
+              </span>
+              <span>
+                <i class="clock outline icon"></i>
+                Pending
+              </span>
+            </div>
+          </div>
+        </div>
+      );
+    });
   }
 
   render() {
@@ -91,68 +109,7 @@ class CampaignShow extends Component {
         <div class="ui hidden divider"></div>
         <h4 class="ui horizontal divider header">Submissions</h4>
 
-        <div class="ui link cards">
-          <div class="card">
-            <div class="image">
-              <img src="https://cdn4.iconfinder.com/data/icons/flatified/512/photos.png" />
-            </div>
-            <div class="content">
-              <div class="header">http://www.url1.com</div>
-              <div style={{ overflowWrap: 'break-word'}} class="meta">
-                <a>0x733F64087efeB50183bb8B2D3cDb3ce824F968Ad</a>
-              </div>
-            </div>
-            <div class="extra content">
-              <span class="right floated">
-                2018-04-01
-              </span>
-              <span>
-                <i class="clock outline icon"></i>
-                Pending
-              </span>
-            </div>
-          </div>
-          <div class="card">
-            <div class="image">
-              <img src="https://cdn4.iconfinder.com/data/icons/flatified/512/photos.png" title="" />
-            </div>
-            <div class="content">
-              <div class="header">http://www.url2.com</div>
-              <div style={{ overflowWrap: 'break-word'}} class="meta">
-                <span class="date">0x733F64087efeB50183bb8B2D3cDb3ce824F968Ad</span>
-              </div>
-            </div>
-            <div class="extra content">
-              <span class="right floated">
-                2018-04-05
-              </span>
-              <span>
-                <i class="clock outline icon"></i>
-                Pending
-              </span>
-            </div>
-          </div>
-          <div class="card">
-            <div class="image">
-              <img src="https://cdn4.iconfinder.com/data/icons/flatified/512/photos.png" title="" />
-            </div>
-            <div class="content">
-              <div class="header">http://www.url3.com</div>
-              <div style={{ overflowWrap: 'break-word'}} class="meta">
-                <a>0x733F64087efeB50183bb8B2D3cDb3ce824F968Ad</a>
-              </div>
-            </div>
-            <div class="extra content">
-              <span class="right floated">
-                2018-04-08
-              </span>
-              <span>
-                <i class="clock outline icon"></i>
-                Pending
-              </span>
-            </div>
-          </div>
-        </div>
+        {this.renderSubmissions()}
 
         <div class="ui hidden divider"></div>
         <h4 class="ui horizontal divider header">More information</h4>
