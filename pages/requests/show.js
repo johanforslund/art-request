@@ -11,6 +11,7 @@ class CampaignShow extends Component {
 
     const summary = await request.methods.getSummary().call();
     const submissionsCount = await request.methods.getSubmissionsCount().call();
+    const finalsCount = await request.methods.getFinalsCount().call();
 
     const submissions = await Promise.all(
       Array(parseInt(submissionsCount)).fill().map(async (element, index) => {
@@ -20,12 +21,18 @@ class CampaignShow extends Component {
       })
     );
 
+    const finals = await Promise.all(
+      Array(parseInt(finalsCount)).fill().map((element, index) => {
+        return request.methods.finals(index).call();
+      })
+    );
+
     const openSubmissions = submissions.filter(submission => {
       return !submission.previewApproved;
     });
 
     const approvedSubmission = submissions.filter(submission => {
-      return submission.previewUrl === 'http://www.submissionnew.com'; //Change this to previewApproved in future
+      return submission.previewApproved; //Change this to previewApproved in future
     })[0]; //Filter function will return an array with 1 object, hence [0]
 
 
@@ -41,6 +48,7 @@ class CampaignShow extends Component {
       finalized: summary[7],
       openSubmissions,
       approvedSubmission,
+      finals,
       address: props.query.address
     };
   }
@@ -104,7 +112,43 @@ class CampaignShow extends Component {
   }
 
   renderApprovedSubmission() {
-
+    return (
+      <div class="ui link cards centered">
+        <div class="card">
+          <div class="image">
+            <img src="https://cdn4.iconfinder.com/data/icons/flatified/512/photos.png" />
+          </div>
+          <div class="content">
+            <div class="header">{this.props.approvedSubmission.previewUrl}</div>
+            <div style={{ overflowWrap: 'break-word'}} class="meta">
+              <a>{this.props.approvedSubmission.submitter}</a>
+            </div>
+          </div>
+          <div class="extra content">
+            <h4>Finals</h4>
+            <div class="ui middle aligned divided list">
+              {this.props.finals.map(final => {
+                return (
+                  <div class="item">
+                    <i class="globe icon"></i>
+                    <div class="content">
+                      <a class="header">{final}</a>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <span class="right floated">
+              2018-04-01
+            </span>
+            <span>
+              <i class="clock outline icon"></i>
+              Pending
+            </span>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   render() {
@@ -129,12 +173,13 @@ class CampaignShow extends Component {
 
         <div class="ui hidden divider"></div>
         <h4 class="ui horizontal divider header">Approved Submission</h4>
-        <h5 style={{ color: '#B03060', textAlign: 'center' }}><i class="exclamation triangle icon"></i>No submission has yet been approved</h5>
+        {this.props.approvedSubmission.length === 0 ? <h5 style={{ color: '#B03060', textAlign: 'center' }}><i class="exclamation triangle icon"></i>No submission has yet been approved</h5> : ''}
         {this.renderApprovedSubmission()}
 
         <div class="ui hidden divider"></div>
         <h4 class="ui horizontal divider header">Open Submissions</h4>
 
+        {this.props.openSubmissions.length === 0 ? <h5 style={{ color: '#B03060', textAlign: 'center' }}><i class="exclamation triangle icon"></i>No open submissions</h5> : ''}
         <div class="ui link cards">
           {this.renderOpenSubmissions()}
         </div>
