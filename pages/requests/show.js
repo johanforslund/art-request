@@ -28,6 +28,8 @@ class CampaignShow extends Component {
       return submission.previewUrl === 'http://www.submissionnew.com'; //Change this to previewApproved in future
     })[0]; //Filter function will return an array with 1 object, hence [0]
 
+
+
     return {
       requester: summary[0],
       title: summary[1],
@@ -102,7 +104,7 @@ class CampaignShow extends Component {
   }
 
   renderApprovedSubmission() {
-    
+
   }
 
   render() {

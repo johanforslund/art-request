@@ -131,7 +131,7 @@ describe('Requests', () => {
     await timeTravel(NUM_SEC_DAY * 4);
     await mineBlock();
 
-    await request.methods.cancelPreviewApproval(0).send({
+    await request.methods.cancelPreviewApproval().send({
       from: accounts[0],
       gas: '3000000'
     });
@@ -143,7 +143,7 @@ describe('Requests', () => {
   it('is possible to withdraw if requester has not approved/rejected final', async () => {
     await submitAndApprovePreview();
 
-    await request.methods.submitFinal(0, 'http://final.com').send({
+    await request.methods.submitFinal('http://final.com').send({
       from: accounts[1],
       value: web3.utils.toWei('1', 'ether'),
       gas: '3000000'
@@ -156,7 +156,7 @@ describe('Requests', () => {
     balanceBefore = web3.utils.fromWei(balanceBefore, 'ether');
     balanceBefore = parseFloat(balanceBefore);
 
-    await request.methods.withdrawNoApproval(0).send({
+    await request.methods.withdrawNoApproval().send({
       from: accounts[1],
       gas: '3000000'
     });
@@ -199,13 +199,13 @@ const submitAndApprovePreview = async () => {
 }
 
 const submitAndApproveFinal = async () => {
-  await request.methods.submitFinal(0, 'http://final.com').send({
+  await request.methods.submitFinal('http://final.com').send({
     from: accounts[1],
     value: web3.utils.toWei('1', 'ether'),
     gas: '3000000'
   });
 
-  await request.methods.approveFinal(0).send({
+  await request.methods.approveFinal().send({
     from: accounts[0],
     gas: '3000000'
   });

@@ -20,9 +20,6 @@ contract Request {
         string submitterEmail;
         address submitter;
         bool previewApproved;
-        uint previewApprovedTime;
-        uint finalSubmissionTime;
-        string[] finals; //Om detta inte fungerar: Skapa en mapping(uint => string) och en finalsCount?
     }
 
     address public requester;
@@ -33,8 +30,12 @@ contract Request {
     uint public reward;
     uint public deposit;
     bool public anyPreviewApproved;
+    uint public previewApprovedTime;
+    uint public approvedPreviewIndex;
     bool public finalized;
+    uint public finalSubmissionTime;
     Submission[] public submissions;
+    string[] public finals;
 
     modifier restricted() {
         require(msg.sender == requester);
@@ -50,6 +51,8 @@ contract Request {
         reward = _value * 100 / 120;
         deposit = _value - reward; //20% deposit
         anyPreviewApproved = false;
+        previewApprovedTime = 0;
+        finalSubmissionTime = 0;
     }
 
     //This is needed for receiving ether from other contract (fallback function)
@@ -58,71 +61,65 @@ contract Request {
     }
 
     function submitPreview(string previewUrl, string submitterEmail) public {
-        string[] memory finals;
-
         Submission memory newSubmission = Submission({
             previewUrl: previewUrl,
             submitterEmail: submitterEmail,
             submitter: msg.sender,
-            previewApproved: false,
-            previewApprovedTime: 0,
-            finalSubmissionTime: 0,
-            finals: finals
+            previewApproved: false
         });
 
         submissions.push(newSubmission);
     }
 
-    function submitFinal(uint index, string finalUrl) public payable {
-        require(submissions[index].previewApproved);
-        if (submissions[index].finals.length == 0) {
+    function submitFinal(string finalUrl) public payable {
+        require(submissions[approvedPreviewIndex].previewApproved);
+        require(submissions[approvedPreviewIndex].submitter == msg.sender);
+        if (finals.length == 0) {
             require(msg.value >= deposit);
         }
-        submissions[index].finals.push(finalUrl);
-        submissions[index].finalSubmissionTime = now;
+        finals.push(finalUrl);
+        finalSubmissionTime = now;
     }
 
     function approvePreview(uint index) public restricted {
         require(!anyPreviewApproved);
         submissions[index].previewApproved = true;
-        submissions[index].previewApprovedTime = now;
+        previewApprovedTime = now;
         anyPreviewApproved = true;
+        approvedPreviewIndex = index;
     }
 
-    function approveFinal(uint index) public restricted {
-        require(submissions[index].previewApproved);
-        require(submissions[index].finals.length > 0);
-        submissions[index].submitter.transfer(reward + deposit);
+    function approveFinal() public restricted {
+        require(finals.length > 0);
+        submissions[approvedPreviewIndex].submitter.transfer(reward + deposit);
         if (!finalized) {
             requester.transfer(deposit);
         }
         finalized = true;
     }
 
-    function rejectFinal(uint index) public restricted {
+    function rejectFinal() public restricted {
         require(!finalized);
-        require(submissions[index].previewApproved);
-        require(submissions[index].finals.length > 0);
+        require(finals.length > 0);
         finalized = true;
         requester.transfer(deposit);
     }
 
     //If person B has not submitted a final submission within 3 days.
-    function cancelPreviewApproval(uint index) public restricted {
-        require(submissions[index].previewApproved);
-        require(submissions[index].previewApprovedTime < now - 3 days);
-        require(submissions[index].finals.length == 0);
-        submissions[index].previewApproved = false;
+    function cancelPreviewApproval() public restricted {
+        require(previewApprovedTime < now - 3 days);
+        require(finals.length == 0);
+        submissions[approvedPreviewIndex].previewApproved = false;
         anyPreviewApproved = false;
     }
 
     //If person A has not approved/rejected the final submission within 3 days.
-    function withdrawNoApproval(uint index) public {
-        require(submissions[index].finals.length > 0);
-        require(submissions[index].submitter == msg.sender);
+    function withdrawNoApproval() public {
+        require(finals.length > 0);
+        require(submissions[approvedPreviewIndex].submitter == msg.sender);
         require(!finalized);
-        require(submissions[index].finalSubmissionTime < now - 3 days);
-        submissions[index].submitter.transfer(reward + deposit);
+        require(finalSubmissionTime < now - 3 days);
+        submissions[approvedPreviewIndex].submitter.transfer(reward + deposit);
         finalized = true;
     }
 
@@ -145,15 +142,8 @@ contract Request {
     }
 
     //getFinalsCount and get
-    function getFinalsCount(uint index) public view returns (uint) {
-        return submissions[index].finals.length;
-    }
-
-    //Getter, solidity does not auto-generate getters for arrays within structs it seems.
-    //Istället för i skulle man kunna mappa ett ID mot en counter++ för varje submission,
-    //eller eventuellt bara ha ett ID som är en counter++.
-    function finals(uint i, uint j) public view returns (string) {
-        return submissions[i].finals[j];
+    function getFinalsCount() public view returns (uint) {
+        return finals.length;
     }
 
     function getSummary() public view returns (address, string, string, string, string, uint, bool, bool) {
