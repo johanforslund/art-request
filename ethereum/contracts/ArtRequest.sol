@@ -150,6 +150,8 @@ contract Request {
     }
 
     //Getter, solidity does not auto-generate getters for arrays within structs it seems.
+    //Istället för i skulle man kunna mappa ett ID mot en counter++ för varje submission,
+    //eller eventuellt bara ha ett ID som är en counter++.
     function finals(uint i, uint j) public view returns (string) {
         return submissions[i].finals[j];
     }
